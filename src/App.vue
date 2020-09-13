@@ -1,15 +1,6 @@
 <template>
     <div id="app" class="small-container">
-        <div id="eka" style="height: 640px; width: 100%">
-            <!--        <div id="toka" style="height: 200px; overflow: auto;">-->
-            <!--            <p>Center is at {{ currentCenter }} and the zoom is: {{ currentZoom }}</p>-->
-            <!--            <button @click="showLongText">-->
-            <!--                Toggle long popup-->
-            <!--            </button>-->
-            <!--            <button @click="showMap = !showMap">-->
-            <!--                Toggle map-->
-            <!--            </button>-->
-            <!--        </div>-->
+        <div id="map" style="height: 640px; width: 100%">
             <l-map
                     v-if="showMap"
                     :zoom="zoom"
@@ -23,41 +14,22 @@
                         :url="url"
                         :attribution="attribution"
                 />
-<!--                <l-marker :lat-lng="withPopup">-->
-<!--                    <l-popup>-->
-<!--                        <div @click="innerClick">-->
-<!--                            I am a popup-->
-<!--                            <p v-show="showParagraph">-->
-<!--                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque-->
-<!--                                sed pretium nisl, ut sagittis sapien. Sed vel sollicitudin nisi.-->
-<!--                                Donec finibus semper metus id malesuada.-->
-<!--                            </p>-->
-<!--                        </div>-->
-<!--                    </l-popup>-->
-<!--                </l-marker>-->
-                    <StopMarkers :items="bikes.bikeRentalStations"></StopMarkers>
-<!--                <l-marker v-for="bikeStop in bikes.bikeRentalStations" :lat-lng="getMarkerLatLong(bikeStop)" v-bind:key="bikeStop.id">-->
-<!--                    <l-popup>-->
-<!--                        <div>-->
-<!--                            Name {{ bikeStop.name }}-->
-<!--                            <br>-->
-<!--                            Bikes: {{ bikeStop.bikesAvailable }}-->
-<!--                            <br>-->
-<!--                            Space: {{ bikeStop.spacesAvailable }}-->
-<!--&lt;!&ndash;                            allowDropoff:true&ndash;&gt;-->
-<!--&lt;!&ndash;                            bikesAvailable:6&ndash;&gt;-->
-<!--&lt;!&ndash;                            lat:60.2689544&ndash;&gt;-->
-<!--&lt;!&ndash;                            lon:24.8201851&ndash;&gt;-->
-<!--&lt;!&ndash;                            name:"Luhtimäki"&ndash;&gt;-->
-<!--&lt;!&ndash;                            spacesAvailable:4&ndash;&gt;-->
-<!--&lt;!&ndash;                            stationId:"1215"&ndash;&gt;-->
 
-<!--                        </div>-->
+                <l-marker v-for="bikeStop in bikes.bikeRentalStations" :lat-lng="getMarkerLatLong(bikeStop)" v-bind:key="bikeStop.id">
+                    <l-popup>
+                        <div>
+                            Name: {{ bikeStop.name }}
+                            <br>
+                            Bikes: {{ bikeStop.bikesAvailable }}
+                            <br>
+                            Space: {{ bikeStop.spacesAvailable }}
+                        </div>
 
-<!--                    </l-popup>-->
-<!--                </l-marker>-->
+                    </l-popup>
+                </l-marker>
             </l-map>
         </div>
+
         <div id="list" class="list">
             <citybike :items="bikes.bikeRentalStations"/>
         </div>
@@ -68,9 +40,8 @@
   import Citybike from '@/components/Citybike.vue';
   import {mapActions, mapGetters} from 'vuex';
   import {Icon, latLng} from 'leaflet';
-  import {LMap, LTileLayer} from 'vue2-leaflet';
+  import {LMap, LMarker, LPopup, LTileLayer} from 'vue2-leaflet';
   import 'leaflet/dist/leaflet.css';
-  import StopMarkers from '@/components/StopMarkers';
 
   delete Icon.Default.prototype._getIconUrl;
   Icon.Default.mergeOptions({
@@ -82,12 +53,11 @@
   export default {
     name: 'app',
     components: {
-      StopMarkers,
       Citybike,
       LMap,
       LTileLayer,
-      // LMarker,
-      // LPopup,
+      LMarker,
+      LPopup,
       // LTooltip
     },
     computed: {
@@ -164,12 +134,12 @@
 <style>
 
     .map {
+        padding-top: 0.5rem;
     }
 
     .list {
         left: 50%;
         right: 50%;
-        float:bottom;
     }
 
     button {

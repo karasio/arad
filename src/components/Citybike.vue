@@ -1,6 +1,6 @@
 <template>
     <div id="citybikes">
-        <h1>Kaupunkipyörät</h1>
+        <h1>Citybikes</h1>
         <b-table
                 :items="items"
         ></b-table>
