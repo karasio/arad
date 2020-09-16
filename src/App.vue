@@ -1,12 +1,11 @@
 <template>
-    <div id="app" class="small-container">
-        <div id="map" style="height: 640px; width: 100%">
+    <div id="app" class="container">
+        <div id="map" class="flexbox upl">
             <l-map
                     v-if="showMap"
                     :zoom="zoom"
                     :center="center"
                     :options="mapOptions"
-                    style="height: 80%"
                     @update:center="centerUpdate"
                     @update:zoom="zoomUpdate"
             >
@@ -29,10 +28,13 @@
                 </l-marker>
             </l-map>
         </div>
-
-        <div id="list" class="list">
+        <div id="weather" class="flexbox upr">
+            <Weather/>
+        </div>
+        <div id="list" class="flexbox btm">
             <citybike :items="bikes.bikeRentalStations"/>
         </div>
+
     </div>
 </template>
 
@@ -42,6 +44,7 @@
   import {Icon, latLng} from 'leaflet';
   import {LMap, LMarker, LPopup, LTileLayer} from 'vue2-leaflet';
   import 'leaflet/dist/leaflet.css';
+  import Weather from '@/components/Weather';
 
   delete Icon.Default.prototype._getIconUrl;
   Icon.Default.mergeOptions({
@@ -53,6 +56,7 @@
   export default {
     name: 'app',
     components: {
+      Weather,
       Citybike,
       LMap,
       LTileLayer,
@@ -133,13 +137,54 @@
 
 <style>
 
-    .map {
-        padding-top: 0.5rem;
+
+    .flexbox {
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+        min-height: 200px;
+        border: 5px solid white;
+        font-size: large;
     }
 
-    .list {
-        left: 50%;
-        right: 50%;
+    .upr {
+        max-width: 15rem;
+        position: relative;
+        padding: 0rem 1rem 0rem 0rem;
+        width: 35%;
+        border: 5px solid white;
+        font-size: smaller;
+    }
+    .upr{
+        margin-bottom: 0;
+    }
+
+    p {
+        margin-bottom: 0;
+    }
+
+    td {
+        padding: 2px;
+    }
+
+    h3 {
+        top: 0;
+        bottom: 0;
+    }
+
+    .upl {
+        border: 5px solid white;
+        position: relative;
+        box-sizing: border-box;
+        top: 0;
+        bottom: 0;
+        width: 65%;
+        padding: 0;
+    }
+
+    .btm {
+        position: relative;
+        width: 85%;
     }
 
     button {
@@ -147,8 +192,10 @@
         border: 1px solid #009435;
     }
 
-    .small-container {
+    .container {
         max-width: 95%;
+        display: flex;
+        flex-wrap: wrap;
     }
 </style>
 
