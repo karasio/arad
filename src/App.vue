@@ -1,201 +1,229 @@
 <template>
     <div id="app" class="container">
-        <div id="map" class="flexbox upl">
-            <l-map
-                    v-if="showMap"
-                    :zoom="zoom"
-                    :center="center"
-                    :options="mapOptions"
-                    @update:center="centerUpdate"
-                    @update:zoom="zoomUpdate"
-            >
-                <l-tile-layer
-                        :url="url"
-                        :attribution="attribution"
-                />
-
-                <l-marker v-for="bikeStop in bikes.bikeRentalStations" :lat-lng="getMarkerLatLong(bikeStop)" v-bind:key="bikeStop.id">
-                    <l-popup>
-                        <div>
-                            Name: {{ bikeStop.name }}
-                            <br>
-                            Bikes: {{ bikeStop.bikesAvailable }}
-                            <br>
-                            Space: {{ bikeStop.spacesAvailable }}
-                        </div>
-
-                    </l-popup>
-                </l-marker>
-            </l-map>
+        <div class="row">
+            <div class="col-md-9">
+                <div id="map" class="map"></div>
+            </div>
+            <div class="col-md-3">
+                <div
+                        class="form-check"
+                        v-for="layer in layers"
+                        :key="layer.id"
+                >
+                    <label class="form-check-label">
+                        <input
+                                class="form-check-input"
+                                type="checkbox"
+                                v-model="layer.active"
+                                @change="layerChanged(layer.id, layer.active)"
+                        />
+                        {{ layer.name }}
+                    </label>
+                </div>
+                <div id="weather">
+                    <Weather/>
+                </div>
+            </div>
         </div>
-        <div id="weather" class="flexbox upr">
-            <Weather/>
+        <div id="inputdiv">
+            <form @submit.prevent="handleSearch" id="inputForm" class="row">
+                <div class="col-md-4">
+                    <p>From:</p>
+                    <b-dropdown :text="whereFrom.name" >
+                        <b-dropdown-item-button
+                                v-for="station in bikes"
+                                :key="station.stationId"
+                                @click.prevent="pickupClickedStation(station)">
+                            {{ station.name }}
+                        </b-dropdown-item-button>
+                    </b-dropdown>
+                </div>
+                <div class="col-md-4">
+                    <p>To:</p>
+                    <input
+                            id="destInput"
+                            type="text"
+                            ref="destination"
+                            v-model="whereTo"
+                            placeholder="Annankatu 1, Helsinki"
+                    />
+                </div>
+                <button class="col-md-2">Search route</button>
+            </form>
         </div>
         <div id="list" class="flexbox btm">
-            <citybike :items="bikes.bikeRentalStations"/>
+            <citybike :items="bikes"/>
         </div>
-
     </div>
 </template>
 
 <script>
-  import Citybike from '@/components/Citybike.vue';
-  import {mapActions, mapGetters} from 'vuex';
-  import {Icon, latLng} from 'leaflet';
-  import {LMap, LMarker, LPopup, LTileLayer} from 'vue2-leaflet';
-  import 'leaflet/dist/leaflet.css';
-  import Weather from '@/components/Weather';
+    import {mapActions, mapGetters} from 'vuex';
 
-  delete Icon.Default.prototype._getIconUrl;
-  Icon.Default.mergeOptions({
-    iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-    iconUrl: require('leaflet/dist/images/marker-icon.png'),
-    shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-  });
+    import L from 'leaflet';
+    import 'leaflet-routing-machine';
 
-  export default {
-    name: 'app',
-    components: {
-      Weather,
-      Citybike,
-      LMap,
-      LTileLayer,
-      LMarker,
-      LPopup,
-      // LTooltip
-    },
-    computed: {
-      ...mapGetters([
-        'bikes'
-      ])
-    },
-    mounted() {
-      this.getBikeData();
-    },
-    data() {
-      return {
-        zoom: 13,
-        center: latLng(60.169667, 24.934885),
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution:
-          '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-        withPopup: latLng(60.169667, 24.93000),
-        withTooltip: latLng(60.169667, 24.934885),
-        currentZoom: 11.5,
-        currentCenter: latLng(60.169667, 24.934885),
-        showParagraph: false,
-        mapOptions: {
-          zoomSnap: 0.5
+    import {Icon} from "leaflet";
+    import 'leaflet/dist/leaflet.css';
+    import { OpenStreetMapProvider } from 'leaflet-geosearch';
+
+
+    import Weather from "@/components/Weather";
+    import Citybike from "@/components/Citybike";
+
+    const provider = new OpenStreetMapProvider();
+
+
+    delete Icon.Default.prototype._getIconUrl;
+    Icon.Default.mergeOptions({
+        iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+        iconUrl: require('leaflet/dist/images/marker-icon.png'),
+        shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+    });
+
+    export default {
+        name: "Example",
+        components: {
+            Weather,
+            Citybike
         },
-        showMap: true
-      };
-    },
-    methods: {
-      zoomUpdate(zoom) {
-        this.currentZoom = zoom;
-      },
-      centerUpdate(center) {
-        this.currentCenter = center;
-      },
-      showLongText() {
-        this.showParagraph = !this.showParagraph;
-      },
-      innerClick() {
-        alert("Click!");
-      },
-      ...mapActions([
-        'fillBikes',
-      ]),
-      getBikeData() {
-        fetch('https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: `{
-          bikeRentalStations {
-              stationId
-              name
-              bikesAvailable
-              spacesAvailable
-              lat
-              lon
-              allowDropoff
-              }
-          }`})
-        })
-        .then(res => res.json())
-        .then(res => {
-          this.fillBikes(res.data);
-        });
-      },
-      getMarkerLatLong(bikeStop) {
-        return latLng(bikeStop.lat, bikeStop.lon);
-      },
-    },
-  };
+        computed: {
+            ...mapGetters([
+                "bikes"
+            ]) ,
+        },
 
+        mounted() {
+            this.getBikeData();
+            this.initMap();
+            this.initLayers();
+        },
+        data() {
+            return {
+                map: null,
+                tileLayer: null,
+                layers: [
+                    {
+                        id: 0,
+                        name: 'Show citybike stations?',
+                        active: false,
+                        features: [],
+                    }
+                ],
+                whereTo: '',
+                whereFrom: {name: 'Choose station',},
+                routingControl: "",
+            };
+        },
+        methods: {
+            initMap() {
+                this.map = L.map('map').setView([60.169667, 24.934885], 12);
+                this.tileLayer = L.tileLayer(
+                    'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png',
+                    {
+                        maxZoom: 18,
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>',
+                    }
+                );
+                this.tileLayer.addTo(this.map);
+            },
+            initLayers() {
+                this.layers.forEach((layer) => {
+                    const markerFeatures = layer.features.filter(feature => feature.type === 'marker');
+                    const polygonFeatures = layer.features.filter(feature => feature.type === 'polygon');
+
+                    markerFeatures.forEach((feature) => {
+                        feature.leafletObject = L.marker(feature.coords)
+                            .bindPopup(feature.name);
+                    });
+                    polygonFeatures.forEach((feature) => {
+                        feature.leafletObject = L.polygon(feature.coords)
+                            .bindPopup(feature.name);
+                    });
+                });
+            },
+            layerChanged(layerId, active) {
+                const layer = this.layers.find(layer => layer.id === layerId);
+                layer.features.forEach((feature) => {
+                    if (active) {
+                        feature.leafletObject.addTo(this.map);
+                    } else {
+                        feature.leafletObject.removeFrom(this.map);
+                    }
+                })
+            },
+            getBikeData() {
+                fetch('https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: `{
+                          bikeRentalStations {
+                              stationId
+                              name
+                              bikesAvailable
+                              spacesAvailable
+                              lat
+                              lon
+                              allowDropoff
+                              }
+                          }`})
+                })
+                    .then(res => res.json())
+                    .then(res => {
+                        this.fillBikes(res.data.bikeRentalStations);
+                        this.fillFeatures(JSON.parse(JSON.stringify(res.data.bikeRentalStations)));
+                    });
+            },
+            ...mapActions([
+                "fillBikes"
+            ]),
+            fillFeatures(tempbikes) {
+                tempbikes.forEach(station => {
+                    station.coords = [station.lat, station.lon];
+                    station.type = 'marker';
+                    station.leafletObject = L.marker(station.coords).bindPopup(station.name + "<br>Bikes: " + station.bikesAvailable + "<br>Space: " + station.spacesAvailable);
+                });
+                this.layers[0].features = tempbikes;
+            },
+            async handleSearch() {
+                if (this.routingControl !== "") {
+                    this.map.removeControl(this.routingControl);
+                }
+                const results = await provider.search({ query: this.whereTo});
+                // console.log(results);
+                let from = [this.whereFrom.lat, this.whereFrom.lon];
+                let to = [results[0].y, results[0].x];
+                // console.log("from ", from, " to ", to);
+
+                this.routingControl = L.Routing.control({
+                    waypoints: [from, to],
+                });
+
+                this.routingControl.addTo(this.map);
+            },
+            pickupClickedStation(station) {
+                // console.log(station.name);
+                this.whereFrom = station;
+            },
+        }
+    };
 </script>
 
 <style>
-
-
-    .flexbox {
-        width: 100%;
-        text-align: center;
-        box-sizing: border-box;
-        min-height: 200px;
-        border: 5px solid white;
-        font-size: large;
+    .form-check-label {
+        padding-bottom: 1.5rem;
+        padding-top: 1.5rem;
     }
 
-    .upr {
-        max-width: 15rem;
-        position: relative;
-        padding: 0rem 1rem 0rem 0rem;
-        width: 35%;
-        border: 5px solid white;
-        font-size: smaller;
+    #inputdiv {
+        padding-top: 1.5rem;
     }
-    .upr{
-        margin-bottom: 0;
+    .map {
+        height: 600px;
     }
 
-    p {
-        margin-bottom: 0;
-    }
-
-    td {
-        padding: 2px;
-    }
-
-    h3 {
-        top: 0;
-        bottom: 0;
-    }
-
-    .upl {
-        border: 5px solid white;
-        position: relative;
-        box-sizing: border-box;
-        top: 0;
-        bottom: 0;
-        width: 65%;
-        padding: 0;
-    }
-
-    .btm {
-        position: relative;
-        width: 85%;
-    }
-
-    button {
-        background: #009435;
-        border: 1px solid #009435;
-    }
-
-    .container {
-        max-width: 95%;
-        display: flex;
-        flex-wrap: wrap;
+    .leaflet-routing-alt {
+        background-color: white;
+        width: 300px;
     }
 </style>
-

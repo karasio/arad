@@ -1,37 +1,37 @@
 <template>
-    <div :items="this.weather">
-        <h3 :items="this.weather">Weather in {{this.weather.request.query}}</h3>
-        <p> {{ this.weather.current.weather_descriptions[0] }}
-        <br> {{ mutateDateTime() }} </p>
+    <div :items="weather" v-if="weather.request !== undefined">
+        <h3 :items="weather">Weather in {{weather.request.query}}</h3>
+        <p> {{ weather.current.weather_descriptions[0] }}
+        <br> {{ mutateDateTime(weather) }} </p>
         <table >
             <tbody>
             <tr>
                 <td>
-                    <img :src="getWeatherImg()" />
+                    <img :src="getWeatherImg(weather)" />
                 </td>
                 <td>
-                    <h3 id="temperature">{{ this.weather.current.temperature }}°c</h3>
+                    <h3 id="temperature">{{ weather.current.temperature }}°c</h3>
                 </td>
             </tr>
             <tr>
                 <td>Wind</td>
-                <td>{{ this.weather.current.wind_speed }} km/h from {{ this.weather.current.wind_dir }}</td>
+                <td>{{ weather.current.wind_speed }} km/h from {{ this.weather.current.wind_dir }}</td>
             </tr>
             <tr>
                 <td>Cloud cover level</td>
-                <td> {{ this.weather.current.cloudcover }}% </td>
+                <td> {{ weather.current.cloudcover }}% </td>
             </tr>
             <tr>
                 <td>Pressure</td>
-                <td>{{ this.weather.current.pressure }} mb</td>
+                <td>{{ weather.current.pressure }} mb</td>
             </tr>
             <tr>
                 <td>Humidity</td>
-                <td>{{ this.weather.current.humidity }}%</td>
+                <td>{{ weather.current.humidity }}%</td>
             </tr>
             <tr>
                 <td>Geo coords</td>
-                <td>{{ this.weather.location.lat }}, {{ this.weather.location.lon}}</td>
+                <td>{{ weather.location.lat }}, {{ weather.location.lon}}</td>
             </tr>
             </tbody>
         </table>
@@ -39,6 +39,8 @@
 </template>
 
 <script>
+    import {mapGetters, mapActions} from "vuex";
+
     export default {
       name: "Weather",
       mounted() {
@@ -46,25 +48,30 @@
       },
       data() {
         return {
-            weather: Object,
         }
       },
+      computed: {
+          ...mapGetters([
+              'weather'
+          ]),
+      },
       methods: {
-        fetchWeather() {
+          ...mapActions([
+              'fillWeather'
+          ]),
+         fetchWeather() {
+
           fetch('http://api.weatherstack.com/current?access_key=3af74978960c2a744ba2372d42673f6a&query=Helsinki')
           .then(response => response.json())
           .then(response => {
-            console.log(response);
-            console.log(typeof response);
-            this.weather = response;
+            this.fillWeather(response);
           })
         },
-        getWeatherImg() {
-          console.log(this.weather.current.weather_icons[0]);
-          return this.weather.current.weather_icons[0];
+        getWeatherImg(weather) {
+          return weather.current.weather_icons[0];
         },
-        mutateDateTime() {
-          let arr = this.weather.location.localtime.split(" ");
+        mutateDateTime(weather) {
+          let arr = weather.location.localtime.split(" ");
           let date = arr[0].split('-');
           let time = arr[1];
           return 'Data received at ' + date[2] + "." + date[1] + '.' + date[0] + ' at ' + time

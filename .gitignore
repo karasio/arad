@@ -3,9 +3,10 @@ node_modules
 /dist
 
 
-# local env files
-.env.local
-.env.*.local
+# dotenv environment variables file
+.env
+.env.test
+
 
 # Log files
 npm-debug.log*
